@@ -28,6 +28,8 @@ setup() {
   [[ ! -d "$MOUNTPOINT/armc$NUMBER" ]] && mkdir "$MOUNTPOINT/armc$NUMBER"
   systemctl is-active -q distccd-armv"${NUMBER}"h || systemctl start distccd-armv"${NUMBER}"h
 
+  [[ ! -d "$CACHEDIR" ]] && mkdir "$CACHEDIR"
+
   # If the root isn't present make it
   if [[ ! -d "$MOUNTPOINT/armc$NUMBER/root" ]]; then
     echo "--> No chroot detected so build one..."
