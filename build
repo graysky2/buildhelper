@@ -7,11 +7,10 @@
 # as well as NFS export on server to be present
 #
 
-# mount point on the RPi3 for building which is expected to be an nfs export
+# mount point on the ARM device for building which is expected to be an nfs export
 MOUNTPOINT=/scratch
 
 # the servername exporting the nfs build space
-#SERVER=ease.lan
 SERVER=10.9.8.228
 
 # regular user

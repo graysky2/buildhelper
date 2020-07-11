@@ -2,22 +2,23 @@
 helper for building with devtools-alarm on Arch ARM using distcc
 
 ## Requirements
-* An NFS export on a server for temp space (mounted and exported to `/scratch` in my case) that will also serve as the distcc volunteer.
+* A x86_64 box that will:
+	* Run as the distcc volunteer.
+	* Run NFS exporting a filesystem for the build.
 * Distcc on both the ARM device as well as on the x86_64 volunteer that is also serving up the NFS export.
 
-This software is not generic as-is, you will have to edit it, see below. 
+This script requires a few edits to work on your setup, see below. 
 
 ## Setup on the ARM device
 1. Copy `build` somewhere in your path like `~/bin/` and make it executable.
-2. Edit it replacing the value for the variable `SERVER` to correspond to the ip address of the x86_64 box.
-3. Put the two config files in `/usr/share/` and edit them adjusting the `DISTCC_HOSTS` array.
-4. Install, configure, and run distcc
-5. Make sure you user has sudo rights
-6. If planning to build armv6h, create `/var/cache/pacman/pkg6/`
+2. Edit it replacing the value for the variable `SERVER` to correspond to the IP address or hostname of the x86_64 box.
+3. Put the two config files in `/usr/share/` and edit them adjusting the `DISTCC_HOSTS` array therein to match your setup.
+4. Install, configure, and run [distcc](https://wiki.archlinux.org/index.php/Distcc).
+5. Make sure you user has [sudo](https://wiki.archlinux.org/index.php/Sudo#Using_visudo) rights.
 
 ## Setup on the x86_64 volunteer
-1. Setup the NFS export which on my machine this is `/scratch` which is also mounted as tmpfs (optional).
-2. Install and configure distcc and [distccd-alarm](https://aur.archlinux.org/packages/distccd-alarm-armv7h/) from the AUR. This includes optionally opening up needed ports on your firewall.
+1. Setup the [NFS](https://wiki.archlinux.org/index.php/NFS) end adjust the `MOUNTPOINT` variable in the script as needed.
+2. Install and configure distcc and [distccd-alarm](https://aur.archlinux.org/packages/distccd-alarm-armv7h/). This includes optionally opening up needed ports on your firewall.
 
 ## Usage
 To create or update the armv7h build root, just run: `sudo build 7` on the ARM device.  Once created, build as normal.
