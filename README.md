@@ -2,25 +2,23 @@
 Helper script for building with devtools-alarm on Arch ARM using distcc
 
 ## Requirements
-* A x86_64 box that will:
-	* Run as the distcc volunteer.
-	* Run NFS exporting a filesystem for the build.
-* Distcc on both the ARM device as well as on the x86_64 volunteer that is also serving up the NFS export.
-
-This script requires a few edits to work on your setup, see below.
+* A x86_64 box that will run distcc and the armv7h or arm8 toolchain.
+* This script requires a few edits to work on your setup, see below.
 
 ## Setup on the x86_64 volunteer
-1. Setup the [NFS](https://wiki.archlinux.org/index.php/NFS) export for your build space (highly recommend tmpfs if you have enough RAM).
-2. Install and configure [distcc](https://wiki.archlinux.org/title/Distcc#Volunteers_2) and [distccd-alarm](https://aur.archlinux.org/packages/distccd-alarm-armv7h/). This includes optionally opening up needed ports on your firewall.
+1. Install and configure [distcc](https://wiki.archlinux.org/title/Distcc#Volunteers_2) and [distccd-alarm](https://aur.archlinux.org/packages/distccd-alarm-armv7h/). This includes optionally opening up needed ports on your firewall.
+
+Although not a requirement, it is highly recommended to provide the build space using NFS so that you are not hitting the RPi's uSD card with tons of I/O.  One way to do this is to setup [NFS](https://wiki.archlinux.org/index.php/NFS) and export one from another machine (could be the one that is serving NFS but that is not a requirement).  If you have enough RAM on the other machine, better yet to use tmpfs instead of bare metal.
 
 ## Setup on the ARM device
 1. Copy `build` to `~/bin/` and make it executable.
 2. Edit it replacing the value for the variable `SERVER` to correspond to the IP address or hostname of the x86_64 box.
-3. Edit it replacing the value for the variable `MOUNTPOINT` to correspond to the NFS export your x86_64 server is using.
-4. Edit `/etc/fstab` adding an entry for the NFS export like this: `10.9.8.234:/scratch /scratch  nfs  noauto,fg,nofail,x-systemd.automount,x-systemd.mount-timeout=10,_netdev,x-systemd.idle-timeout=1m 0 0`
-5. Put the two config files in `~/bin/` then edit them adjusting the `DISTCC_HOSTS` array therein to match your setup. Take care not to change the default port values as they correspond to the defaults in [distccd-alarm](https://aur.archlinux.org/packages/distccd-alarm-armv7h/). You can change the number after the slash to the number of cores on the x86_64 volunteer (32 is what I use for my hardware).
-6. Install and configure [distcc](https://wiki.archlinux.org/title/Distcc#Client_2)
-7. Make sure you user has [sudo](https://wiki.archlinux.org/index.php/Sudo#Using_visudo) rights.
+3. Edit it replacing the value for the variable `BUILDROOT` to correspond to the directory or partition (NFS export or otherwise) to serve as the build root.
+4. Put the two config files in `~/bin/` then edit them adjusting the `DISTCC_HOSTS` array therein to match your setup. Take care not to change the default port values as they correspond to the defaults in [distccd-alarm](https://aur.archlinux.org/packages/distccd-alarm-armv7h/). You can change the number after the slash to the number of cores on the x86_64 volunteer (16 is what I use for my hardware).
+5. Install and configure [distcc](https://wiki.archlinux.org/title/Distcc#Client_2)
+6. Make sure you user has [sudo](https://wiki.archlinux.org/index.php/Sudo#Using_visudo) rights.
+
+Note that if you are using NFS for your buildroot, one way to manage mounting it is to edit `/etc/fstab` adding an entry for the NFS export like this: `10.9.8.234:/scratch /scratch  nfs  noauto,fg,nofail,x-systemd.automount,x-systemd.mount-timeout=10,_netdev,x-systemd.idle-timeout=1m 0 0`
 
 ## Usage
 To create or update the build root, just run: `sudo build 7` or `sudo build 8` on the ARM device.  Once created, build as normal.
@@ -43,7 +41,7 @@ To create or update the build root, just run: `sudo build 7` or `sudo build 8` o
  --> MAKEFLAGS=-jxx makechrootpkg -r /scratch/armc8
 
 % cd /scratch/mesa
-% MAKEFLAGS=-j36 makechrootpkg -r /scratch/armc8
+% MAKEFLAGS=-j16 makechrootpkg -r /scratch/armc8
 ```
 
-In the example above, the x86_64 box has 32 cores.  You should experiment with different values on your own hardware.
+In the example above, the x86_64 box has 16 cores.  You should experiment with different values on your own hardware.
