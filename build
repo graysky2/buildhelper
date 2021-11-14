@@ -3,18 +3,15 @@
 # helper for Arch ARM clean-chroot builds
 #
 # Expects distcc using distccd-alarm (AUR) to be setup and running on server
-# as well as NFS export on server to be present
 #
 # Make sure you also download and setup ~/bin/makepkg.armv7h and ~/bin/makepkg.armv8
 
-# mount point on the RPi for building which is expected to be an nfs export
-MOUNTPOINT=/scratch
+# directory on the RPi for building
+# highly recommend building on an NFS partition to avoid tons of I/O on the uSD card
+BUILDROOT=/scratch
 
 # the servername exporting the nfs build space
 SERVER=10.9.8.234
-
-# regular user
-USER=$(whoami)
 
 setup() {
   # sanity checks
@@ -25,37 +22,25 @@ setup() {
 
   [[ -f "$MAKC" ]] || { echo "--> cannot find $MAKC so exiting"; exit 1; }
 
-  [[ ! -d "$MOUNTPOINT/armc$NUMBER" ]] && mkdir "$MOUNTPOINT/armc$NUMBER"
+  [[ ! -d "$BUILDROOT/armc$NUMBER" ]] && mkdir "$BUILDROOT/armc$NUMBER"
 
   # If the root isn't present make it
-  if [[ ! -d "$MOUNTPOINT/armc$NUMBER/root" ]]; then
+  if [[ ! -d "$BUILDROOT/armc$NUMBER/root" ]]; then
     echo "--> No chroot detected so build one..."
-    runuser -l "$USER" -c "mkarchroot -M $MAKC -c $CACHEDIR $MOUNTPOINT/armc$NUMBER/root base-devel distcc" || exit 1
+    runuser -l $(whoami) -c "mkarchroot -M $MAKC -c $CACHEDIR $BUILDROOT/armc$NUMBER/root base-devel distcc" || exit 1
 
     # use our mirrorlist
-    cp /etc/pacman.d/mirrorlist "$MOUNTPOINT"/armc"$NUMBER"/root/etc/pacman.d
+    cp /etc/pacman.d/mirrorlist "$BUILDROOT"/armc"$NUMBER"/root/etc/pacman.d
   else
     # there must be a root so update it first
     echo "--> Found a chroot so updating it..."
-    runuser -l "$USER" -c "arch-nspawn -c $CACHEDIR -C /tmp/pac$NUMBER.conf $MOUNTPOINT/armc$NUMBER/root pacman -Syu --noconfirm"
+    runuser -l $(whoami) -c "arch-nspawn -c $CACHEDIR -C /tmp/pac$NUMBER.conf $BUILDROOT/armc$NUMBER/root pacman -Syu --noconfirm"
   fi
-
-  # makechrootpkg uses flock to manage copies so the comments shit doesnt work right
-  # edit /usr/bin/makechrootpkg on the RPi3 to use the bwlimited rsync copy command
-  # to avoid the bug: https://github.com/raspberrypi/linux/issues/2788
-  #
-  # I don't know of a better way
-  #
-  # script on RPi3 = /usr/bin/makechrootpkg
-  #   in the script: rsync -a --delete -q -W -x "$rootdir/" "$copydir"
-  #   change it to: rsync -a --delete -W -x --info=progress2 --info=name0 --bwlimit=9000 "$rootdir/" "$copydir"
 }
 
 usage() {
-  echo
-  echo " --> all setup!"
-  echo " --> cd $MOUNTPOINT/path/to/PKGBUILD"
-  echo " --> MAKEFLAGS=-jxx makechrootpkg -r $MOUNTPOINT/armc$NUMBER"
+  echo " --> cd $BUILDROOT/path/to/PKGBUILD"
+  echo " --> MAKEFLAGS=-jxx makechrootpkg -r $BUILDROOT/armc$NUMBER -- -A --nocheck"
 }
 
 if [ $UID != "0" ]; then
@@ -65,15 +50,9 @@ fi
 
 case "$1" in
   7) export NUMBER=7 PORT=3635 PACMANCONF=/tmp/pac7.conf CACHEDIR=/var/cache/pacman/pkg MAKC=~/bin/makepkg.armv7h
-    cp /etc/pacman.conf /tmp/pac7.conf
-    setup
-    usage
-    ;;
+    cp /etc/pacman.conf /tmp/pac7.conf && setup && usage ;;
   8) export NUMBER=8 PORT=3636 PACMANCONF=/tmp/pac8.conf CACHEDIR=/var/cache/pacman/pkg MAKC=~/bin/makepkg.armv8
-    cp /etc/pacman.conf /tmp/pac8.conf
-    setup
-    usage
-    ;;
+    cp /etc/pacman.conf /tmp/pac8.conf && setup && usage ;;
   *) echo "usage: $0 {7,8}" ;;
 esac
 exit 0
