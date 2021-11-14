@@ -1,17 +1,17 @@
 #!/bin/bash
 
-#
-# helper for armv7h and armv6h clean-chroot builds
+# helper for Arch ARM clean-chroot builds
 #
 # Expects distcc using distccd-alarm (AUR) to be setup and running on server
 # as well as NFS export on server to be present
 #
+# Make sure you also download and setup ~/bin/makepkg.armv7h and ~/bin/makepkg.armv8
 
-# mount point on the ARM device for building which is expected to be an nfs export
+# mount point on the RPi for building which is expected to be an nfs export
 MOUNTPOINT=/scratch
 
 # the servername exporting the nfs build space
-SERVER=10.9.8.228
+SERVER=10.9.8.234
 
 # regular user
 USER=$(whoami)
@@ -19,20 +19,18 @@ USER=$(whoami)
 setup() {
   # sanity checks
   # these three should be passed by this script to this function so fail if they are not
-  for var in "$NUMBER" "$PORT" "$PACMANCONF" "$CACHEDIR" "$MAKC"; do
-    [[ -n $var ]] || { echo "    $var is not defined so exiting"; exit 1; }
-
+  for var in "$NUMBER" "$PORT" "$PACMANCONF" "$CACHEDIR"; do
+    [[ -n $var ]] || { echo "--> $var is not defined so exiting"; exit 1; }
   done
 
-  [[ ! -d "$MOUNTPOINT/armc$NUMBER" ]] && mkdir "$MOUNTPOINT/armc$NUMBER"
-  systemctl is-active -q distccd-armv"${NUMBER}"h || systemctl start distccd-armv"${NUMBER}"h
+  [[ -f "$MAKC" ]] || { echo "--> cannot find $MAKC so exiting"; exit 1; }
 
-  [[ ! -d "$CACHEDIR" ]] && mkdir "$CACHEDIR"
+  [[ ! -d "$MOUNTPOINT/armc$NUMBER" ]] && mkdir "$MOUNTPOINT/armc$NUMBER"
 
   # If the root isn't present make it
   if [[ ! -d "$MOUNTPOINT/armc$NUMBER/root" ]]; then
     echo "--> No chroot detected so build one..."
-    runuser -l "$USER" -c "mkarchroot -C $PACMANCONF -M $MAKC -c $CACHEDIR $MOUNTPOINT/armc$NUMBER/root base-devel distcc" || exit 1
+    runuser -l "$USER" -c "mkarchroot -M $MAKC -c $CACHEDIR $MOUNTPOINT/armc$NUMBER/root base-devel distcc" || exit 1
 
     # use our mirrorlist
     cp /etc/pacman.d/mirrorlist "$MOUNTPOINT"/armc"$NUMBER"/root/etc/pacman.d
@@ -57,7 +55,7 @@ usage() {
   echo
   echo " --> all setup!"
   echo " --> cd $MOUNTPOINT/path/to/PKGBUILD"
-  echo " --> MAKEFLAGS=-j16 makechrootpkg -C $CACHEDIR -r $MOUNTPOINT/armc$NUMBER"
+  echo " --> MAKEFLAGS=-jxx makechrootpkg -r $MOUNTPOINT/armc$NUMBER"
 }
 
 if [ $UID != "0" ]; then
@@ -65,25 +63,18 @@ if [ $UID != "0" ]; then
   exit 1
 fi
 
-[[ -f /sys/devices/system/cpu/cpufreq/policy0/scaling_governor ]] &&
-  echo performance > /sys/devices/system/cpu/cpufreq/policy0/scaling_governor
-
-if ! mountpoint -q "$MOUNTPOINT"; then
-  mount "$SERVER:/scratch" "$MOUNTPOINT" || exit 1
-fi
-
 case "$1" in
-  6) export NUMBER=6 PORT=3634 PACMANCONF=/tmp/pac6.conf CACHEDIR=/var/cache/pacman/pkg6 MAKC=/usr/share/makepkg.armv6h.conf
-    sed -e '/Architecture =/ s,7h,6h,' /etc/pacman.conf > /tmp/pac6.conf
-    setup
-    usage
-    ;;
-  7) export NUMBER=7 PORT=3635 PACMANCONF=/tmp/pac7.conf CACHEDIR=/var/cache/pacman/pkg MAKC=/usr/share/makepkg.armv7h.conf
+  7) export NUMBER=7 PORT=3635 PACMANCONF=/tmp/pac7.conf CACHEDIR=/var/cache/pacman/pkg MAKC=~/bin/makepkg.armv7h
     cp /etc/pacman.conf /tmp/pac7.conf
     setup
     usage
     ;;
-  *) echo "usage: $0 {6,7}" ;;
+  8) export NUMBER=8 PORT=3636 PACMANCONF=/tmp/pac8.conf CACHEDIR=/var/cache/pacman/pkg MAKC=~/bin/makepkg.armv8
+    cp /etc/pacman.conf /tmp/pac8.conf
+    setup
+    usage
+    ;;
+  *) echo "usage: $0 {7,8}" ;;
 esac
 exit 0
 # vim:set ts=2 sw=2 et:

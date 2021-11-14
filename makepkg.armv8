@@ -32,18 +32,20 @@ VCSCLIENTS=('bzr::bzr'
 # ARCHITECTURE, COMPILE FLAGS
 #########################################################################
 #
-CARCH="armv6h"
-CHOST="armv6l-unknown-linux-gnueabihf"
+CARCH="aarch64"
+CHOST="aarch64-unknown-linux-gnu"
 
 #-- Compiler and Linker Flags
 # -march (or -mcpu) builds exclusively for an architecture
 # -mtune optimizes for an architecture, but builds for whole processor family
 CPPFLAGS="-D_FORTIFY_SOURCE=2"
-CFLAGS="-march=armv6 -mfloat-abi=hard -mfpu=vfp -O2 -pipe -fno-plt"
-CXXFLAGS="-march=armv6 -mfloat-abi=hard -mfpu=vfp -O2 -pipe -fno-plt"
+CFLAGS="-march=armv8-a -O2 -pipe -fno-plt"
+CXXFLAGS="$CFLAGS"
 LDFLAGS="-Wl,-O1,--sort-common,--as-needed,-z,relro,-z,now"
 #-- Make Flags: change this for DistCC/SMP systems
-MAKEFLAGS="-j16"
+# Always leave blank and prefix a call to makechrootpkg with MAKEFLAGS=-jxxx
+# See: https://bugs.archlinux.org/task/64938
+#MAKEFLAGS=
 #-- Debugging flags
 DEBUG_CFLAGS="-g -fvar-tracking-assignments"
 DEBUG_CXXFLAGS="-g -fvar-tracking-assignments"
@@ -65,7 +67,7 @@ BUILDENV=(distcc color !ccache check !sign)
 #
 #-- If using DistCC, your MAKEFLAGS will also need modification. In addition,
 #-- specify a space-delimited list of hosts running in the DistCC cluster.
-DISTCC_HOSTS="10.9.8.228:3634"
+DISTCC_HOSTS="10.9.8.234:3636/32"
 #
 #-- Specify a directory for package building.
 #BUILDDIR=/tmp/makepkg
