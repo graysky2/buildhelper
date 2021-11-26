@@ -4,7 +4,7 @@
 #
 # Expects distcc using distccd-alarm (AUR) to be setup and running on server
 #
-# Make sure you also download and setup ~/bin/makepkg.armv7h and ~/bin/makepkg.armv8
+# Make sure you also download and setup $HOME/bin/makepkg.armv7h and $HOME/bin/makepkg.armv8
 
 # directory on the RPi for building
 # highly recommend building on an NFS partition to avoid tons of I/O on the uSD card
@@ -24,14 +24,14 @@ setup() {
   # If the root isn't present make it
   if [[ ! -d "$BUILDROOT/armc$NUMBER/root" ]]; then
     echo "--> No chroot detected so build one..."
-    runuser -l $(whoami) -c "mkarchroot -M $MAKC -c $CACHEDIR $BUILDROOT/armc$NUMBER/root base-devel distcc" || exit 1
+    runuser -l "$user" -c "mkarchroot -M $MAKC -c $CACHEDIR $BUILDROOT/armc$NUMBER/root base-devel distcc" || exit 1
 
     # use our mirrorlist
     cp /etc/pacman.d/mirrorlist "$BUILDROOT"/armc"$NUMBER"/root/etc/pacman.d
   else
     # there must be a root so update it first
     echo "--> Found a chroot so updating it..."
-    runuser -l $(whoami) -c "arch-nspawn -c $CACHEDIR -C /tmp/pac$NUMBER.conf $BUILDROOT/armc$NUMBER/root pacman -Syu --noconfirm"
+    runuser -l "$user" -c "arch-nspawn -c $CACHEDIR -C /tmp/pac$NUMBER.conf $BUILDROOT/armc$NUMBER/root pacman -Syu --noconfirm"
   fi
 }
 
@@ -45,10 +45,13 @@ if [ $UID != "0" ]; then
   exit 1
 fi
 
+user=$(logname)
+HOME="$(getent passwd "$user" | cut -d: -f6)"
+
 case "$1" in
-  7) export NUMBER=7 PORT=3635 PACMANCONF=/tmp/pac7.conf CACHEDIR=/var/cache/pacman/pkg MAKC=~/bin/makepkg.armv7h
+  7) export NUMBER=7 PORT=3635 PACMANCONF=/tmp/pac7.conf CACHEDIR=/var/cache/pacman/pkg MAKC=$HOME/bin/makepkg.armv7h
     cp /etc/pacman.conf /tmp/pac7.conf && setup && usage ;;
-  8) export NUMBER=8 PORT=3636 PACMANCONF=/tmp/pac8.conf CACHEDIR=/var/cache/pacman/pkg MAKC=~/bin/makepkg.armv8
+  8) export NUMBER=8 PORT=3636 PACMANCONF=/tmp/pac8.conf CACHEDIR=/var/cache/pacman/pkg MAKC=$HOME/bin/makepkg.armv8
     cp /etc/pacman.conf /tmp/pac8.conf && setup && usage ;;
   *) echo "usage: $0 {7,8}" ;;
 esac
