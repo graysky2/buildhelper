@@ -10,9 +10,6 @@
 # highly recommend building on an NFS partition to avoid tons of I/O on the uSD card
 BUILDROOT=/scratch
 
-# the servername exporting the nfs build space
-SERVER=10.9.8.234
-
 setup() {
   # sanity checks
   # these three should be passed by this script to this function so fail if they are not
