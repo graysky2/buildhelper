@@ -2,11 +2,12 @@
 Helper script for building with devtools-alarm on Arch ARM using distcc
 
 ## Requirements
-* A x86_64 box that will run distcc and the armv7h or arm8 toolchain.
+* A x86_64 box that will run distcc and the armv7h or arm8 toolchain (provided by AUR package linked below).
+* You must be using graysky's modified [devtools-alarm](https://github.com/graysky2/PKGBUILDs/commits/devtools-alarm) package or else the MAKEFLAGS are not passed to the build script and distccd will run slow as fuck.
 * This script requires a few edits to work on your setup, see below.
 
 ## Setup on the x86_64 volunteer
-1. Install and configure [distcc](https://wiki.archlinux.org/title/Distcc#Volunteers_2) and [distccd-alarm](https://aur.archlinux.org/packages/distccd-alarm-armv7h/). This includes optionally opening up needed ports on your firewall.
+1. Install and configure [distcc](https://wiki.archlinux.org/title/Distcc#Volunteers_2) and [distccd-alarm](https://aur.archlinux.org/packages/distccd-alarm-armv8/). This includes optionally opening up needed ports on your firewall.
 
 Although not a requirement, it is highly recommended to provide the build space using NFS so that you are not hitting the RPi's uSD card with tons of I/O.  One way to do this is to setup [NFS](https://wiki.archlinux.org/index.php/NFS) and export one from another machine (could be the one that is serving NFS but that is not a requirement).  If you have enough RAM on the other machine, better yet to use tmpfs instead of bare metal.
 
@@ -41,7 +42,7 @@ To create or update the build root, just run: `sudo build 7` or `sudo build 8` o
  --> MAKEFLAGS=-jxx makechrootpkg -r /scratch/armc8
 
 % cd /scratch/mesa
-% MAKEFLAGS=-j16 makechrootpkg -r /scratch/armc8
+% MAKEFLAGS=-j32 makechrootpkg -r /scratch/armc8
 ```
 
-In the example above, the x86_64 box has 16 cores.  You should experiment with different values on your own hardware.
+In the example above, the x86_64 box has 32 cores.  You should experiment with different values on your own hardware.
