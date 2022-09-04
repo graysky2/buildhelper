@@ -10,6 +10,9 @@
 # highly recommend building on an NFS partition to avoid tons of I/O on the uSD card
 BUILDROOT=/scratch
 
+# name of the build root prefix
+ROOTNAMEPREFIX=armc
+
 setup() {
   # sanity checks
   # these three should be passed by this script to this function so fail if they are not
@@ -19,25 +22,26 @@ setup() {
 
   [[ -f "$MAKC" ]] || { echo "--> cannot find $MAKC so exiting"; exit 1; }
 
-  [[ ! -d "$BUILDROOT/armc$NUMBER" ]] && mkdir "$BUILDROOT/armc$NUMBER"
+  [[ ! -d "$BUILDROOT/$ROOTNAMEPREFIX$NUMBER" ]] && mkdir "$BUILDROOT/$ROOTNAMEPREFIX$NUMBER"
 
   # If the root isn't present make it
-  if [[ ! -d "$BUILDROOT/armc$NUMBER/root" ]]; then
+  if [[ ! -d "$BUILDROOT/$ROOTNAMEPREFIX$NUMBER/root" ]]; then
     echo "--> No chroot detected so build one..."
-    runuser -l "$user" -c "mkarchroot -M $MAKC -c $CACHEDIR $BUILDROOT/armc$NUMBER/root base-devel distcc" || exit 1
+    runuser -l "$user" -c "mkarchroot -M $MAKC -c $CACHEDIR $BUILDROOT/$ROOTNAMEPREFIX$NUMBER/root base-devel distcc" || exit 1
 
     # use our mirrorlist
-    cp /etc/pacman.d/mirrorlist "$BUILDROOT"/armc"$NUMBER"/root/etc/pacman.d
+    cp /etc/pacman.d/mirrorlist "$BUILDROOT"/"$ROOTNAMEPREFIX$NUMBER"/root/etc/pacman.d
+
   else
     # there must be a root so update it first
     echo "--> Found a chroot so updating it..."
-    runuser -l "$user" -c "arch-nspawn -c $CACHEDIR -C /tmp/pac$NUMBER.conf $BUILDROOT/armc$NUMBER/root pacman -Syu --noconfirm"
+    runuser -l "$user" -c "arch-nspawn -c $CACHEDIR -C /tmp/pac$NUMBER.conf $BUILDROOT/$ROOTNAMEPREFIX$NUMBER/root pacman -Syu --noconfirm"
   fi
 }
 
 usage() {
   echo " --> cd $BUILDROOT/path/to/PKGBUILD"
-  echo " --> MAKEFLAGS=-jxx makechrootpkg -r $BUILDROOT/armc$NUMBER -- -A --nocheck"
+  echo " --> MAKEFLAGS=-jxx makechrootpkg -r $BUILDROOT/$ROOTNAMEPREFIX$NUMBER -- -A --nocheck"
 }
 
 if [ $UID != "0" ]; then
